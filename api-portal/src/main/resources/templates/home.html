@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"> <head>
+  <meta charset="UTF-8">
+  <title>Home - API Portal</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+  <h1>Welcome to the API Portal, <span sec:authentication="name">User</span>!</h1>
+  <p>This is your home page after successful login.</p>
+  <p>Your username is: <strong th:text="${username}"></strong></p> <p sec:authorize="isAuthenticated()">
+  Authenticated as: <span sec:authentication="name"></span> |
+  Roles: <span sec:authentication="principal.authorities"></span>
+</p>
+
+  <form th:action="@{/logout}" method="post" style="margin-top: 20px;">
+    <button type="submit" class="logout-button">Logout</button>
+  </form>
+
+  <div style="margin-top: 30px;">
+    <a th:href="@{/api-docs}">View API Docs</a> |
+    <a th:href="@{/my-profile}">My Profile / API Key</a> </div>
+</div>
+<style>
+  .logout-button {
+    background-color: #dc3545; /* Red */
+    color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer;
+  }
+</style>
+</body>
+</html>

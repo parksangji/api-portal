@@ -9,10 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -32,7 +29,6 @@ public class UserController {
 
     // 2. 회원가입 요청 처리 (POST)
     // UserController.java 수정 부분
-
     @PostMapping("/register")
     public String handleRegistration(@Valid @ModelAttribute("userRegistrationRequest") UserRegistrationRequest requestDto, // ModelAttribute 이름 명시
                                      BindingResult bindingResult, // @Valid 결과 확인 (@ModelAttribute 뒤에 와야 함)
@@ -66,5 +62,18 @@ public class UserController {
             // model.addAttribute("userRegistrationRequest", requestDto); // @ModelAttribute("userRegistrationRequest") 로 자동 추가됨
             return "users/register";
         }
+    }
+
+    @GetMapping("/login")
+    public String showLoginForm(@RequestParam(value = "error", required = false) String error,
+                                @RequestParam(value = "logout", required = false) String logout,
+                                Model model) {
+        if (error != null) {
+            model.addAttribute("errorMessage", "Invalid username or password.");
+        }
+        if (logout != null) {
+            model.addAttribute("logoutMessage", "You have been logged out successfully.");
+        }
+        return "login";
     }
 }
