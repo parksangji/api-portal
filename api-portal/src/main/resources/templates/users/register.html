@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - API Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container form-container">
+    <h1>Create Your API Portal Account</h1>  
+
+    <div th:if="${successMessage}" class="message success-message">
+        <p th:text="${successMessage}"></p>
+    </div>
+    <div th:if="${errorMessage}" class="message error-message">
+        <p th:text="${errorMessage}"></p>
+    </div>
+
+    <form th:action="@{/users/register}" th:object="${userRegistrationRequest}" method="post" novalidate>
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" th:field="*{username}" placeholder="Enter your username" required>
+            <div th:if="${#fields.hasErrors('username')}" th:errors="*{username}" class="error-message">Username Error</div>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" th:field="*{password}" placeholder="Enter your password (min 8 characters)" required>
+            <div th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="error-message">Password Error</div>
+        </div>
+
+        <div class="form-group">
+            <button type="submit">Register</button>
+        </div>
+    </form>
+
+    <div class="login-link">
+        <p>Already have an account? <a th:href="@{/login}">Login here</a></p>
+    </div>
+</div>
+</body>
+</html>

@@ -31,30 +31,40 @@ public class UserController {
     }
 
     // 2. 회원가입 요청 처리 (POST)
+    // UserController.java 수정 부분
+
     @PostMapping("/register")
-    public String handleRegistration(@Valid @ModelAttribute UserRegistrationRequest requestDto,
-                                     BindingResult bindingResult,
+    public String handleRegistration(@Valid @ModelAttribute("userRegistrationRequest") UserRegistrationRequest requestDto, // ModelAttribute 이름 명시
+                                     BindingResult bindingResult, // @Valid 결과 확인 (@ModelAttribute 뒤에 와야 함)
+                                     Model model, // 모델 추가
                                      RedirectAttributes redirectAttributes) {
 
+        // Validation 오류 확인
         if (bindingResult.hasErrors()) {
             log.warn("Registration validation errors: {}", bindingResult.getAllErrors());
-            // TODO: 오류 메시지를 모델에 담아 폼에 표시하는 로직 추가 필요
-            return "users/register";
+            // 오류가 있으면 모델에 bindingResult가 자동으로 담기므로,
+            // 입력된 내용(requestDto)과 함께 다시 회원가입 폼으로 돌아감
+            // model.addAttribute("userRegistrationRequest", requestDto); // @ModelAttribute("userRegistrationRequest") 로 자동 추가됨
+            return "users/register"; // 리다이렉트 없이 뷰 이름 반환
         }
 
         try {
             userService.registerUser(requestDto);
             log.info("User registered successfully: {}", requestDto.username());
             redirectAttributes.addFlashAttribute("successMessage", "Registration successful! Please log in.");
-            return "redirect:/login";
+            return "redirect:/login"; // 성공 시 로그인 페이지로 리다이렉트
         } catch (IllegalArgumentException e) {
             log.error("Registration failed for user {}: {}", requestDto.username(), e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            return "redirect:/users/register";
+            // 사용자 이름 중복과 같은 특정 오류는 필드 오류로 추가 가능
+            // bindingResult.rejectValue("username", "error.user", e.getMessage());
+            model.addAttribute("errorMessage", e.getMessage()); // 일반 오류 메시지 추가
+            // model.addAttribute("userRegistrationRequest", requestDto); // @ModelAttribute("userRegistrationRequest") 로 자동 추가됨
+            return "users/register"; // 실패 시 다시 회원가입 폼으로 (입력 유지)
         } catch (Exception e) {
             log.error("Unexpected error during registration for user {}: {}", requestDto.username(), e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", "An unexpected error occurred. Please try again later.");
-            return "redirect:/users/register";
+            model.addAttribute("errorMessage", "An unexpected error occurred. Please try again later.");
+            // model.addAttribute("userRegistrationRequest", requestDto); // @ModelAttribute("userRegistrationRequest") 로 자동 추가됨
+            return "users/register";
         }
     }
 }

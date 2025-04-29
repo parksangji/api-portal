@@ -1,0 +1,130 @@
+/* Basic Reset & Font */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', sans-serif; /* Google Roboto Font */
+    background-color: #f8f9fa; /* Light gray background */
+    color: #333; /* Dark gray text */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Full viewport height */
+}
+
+/* Container */
+.container {
+    max-width: 960px;
+    margin: 20px auto;
+    padding: 30px;
+    background-color: #ffffff; /* White background for content */
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Subtle shadow */
+}
+
+.form-container {
+    max-width: 450px; /* Limit width for forms */
+    text-align: center;
+}
+
+/* Headings */
+h1 {
+    color: #4285F4; /* Google Blue */
+    margin-bottom: 25px;
+    font-weight: 500;
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: 20px;
+    text-align: left; /* Align labels and inputs left */
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #5f6368; /* Medium gray for labels */
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+    width: calc(100% - 20px); /* Account for padding */
+    padding: 10px;
+    border: 1px solid #dfe1e5; /* Google Search input border color */
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease-in-out;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus {
+    outline: none;
+    border-color: #4285F4; /* Google Blue focus indicator */
+    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2); /* Subtle focus glow */
+}
+
+button[type="submit"] {
+    background-color: #4285F4; /* Google Blue */
+    color: #ffffff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    width: 100%; /* Full width button */
+    transition: background-color 0.2s ease-in-out;
+}
+
+button[type="submit"]:hover {
+    background-color: #1a73e8; /* Darker Google Blue on hover */
+}
+
+/* Links */
+a {
+    color: #1a73e8; /* Google Link Blue */
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.login-link {
+    margin-top: 20px;
+    font-size: 0.9rem;
+    color: #5f6368;
+}
+
+/* Message Styles */
+.message {
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.success-message {
+    background-color: #e6f4ea; /* Light green background */
+    color: #1e8e3e; /* Dark green text */
+    border: 1px solid #a8dab5;
+}
+
+.error-message {
+    background-color: #fce8e6; /* Light red background */
+    color: #d93025; /* Dark red text */
+    border: 1px solid #f7b5b0;
+    font-size: 0.85rem; /* Smaller font for field errors */
+    text-align: left; /* Align field errors left */
+    margin-top: 5px;
+}
+
+/* Specific error message styling for form fields */
+.form-group .error-message {
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    margin-top: 5px;
+}
