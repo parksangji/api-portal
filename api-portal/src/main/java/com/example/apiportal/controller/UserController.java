@@ -1,11 +1,15 @@
 package com.example.apiportal.controller;
 
+import com.example.apiportal.domain.User;
 import com.example.apiportal.dto.UserRegistrationRequest;
 import com.example.apiportal.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -20,46 +24,29 @@ public class UserController {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
     private final UserService userService;
 
-    // 1. 회원가입 폼 페이지 요청 처리 (GET)
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {
         model.addAttribute("userRegistrationRequest", new UserRegistrationRequest("", ""));
         return "users/register";
     }
-
-    // 2. 회원가입 요청 처리 (POST)
-    // UserController.java 수정 부분
     @PostMapping("/register")
-    public String handleRegistration(@Valid @ModelAttribute("userRegistrationRequest") UserRegistrationRequest requestDto, // ModelAttribute 이름 명시
-                                     BindingResult bindingResult, // @Valid 결과 확인 (@ModelAttribute 뒤에 와야 함)
-                                     Model model, // 모델 추가
+    public String handleRegistration(@Valid @ModelAttribute("userRegistrationRequest") UserRegistrationRequest requestDto,
+                                     BindingResult bindingResult,
+                                     Model model,
                                      RedirectAttributes redirectAttributes) {
-
-        // Validation 오류 확인
         if (bindingResult.hasErrors()) {
-            log.warn("Registration validation errors: {}", bindingResult.getAllErrors());
-            // 오류가 있으면 모델에 bindingResult가 자동으로 담기므로,
-            // 입력된 내용(requestDto)과 함께 다시 회원가입 폼으로 돌아감
-            // model.addAttribute("userRegistrationRequest", requestDto); // @ModelAttribute("userRegistrationRequest") 로 자동 추가됨
-            return "users/register"; // 리다이렉트 없이 뷰 이름 반환
+            return "users/register";
         }
-
         try {
-            userService.registerUser(requestDto);
-            log.info("User registered successfully: {}", requestDto.username());
+            userService.registerUser(requestDto); // Service 호출
             redirectAttributes.addFlashAttribute("successMessage", "Registration successful! Please log in.");
-            return "redirect:/login"; // 성공 시 로그인 페이지로 리다이렉트
+            return "redirect:/login";
         } catch (IllegalArgumentException e) {
-            log.error("Registration failed for user {}: {}", requestDto.username(), e.getMessage());
-            // 사용자 이름 중복과 같은 특정 오류는 필드 오류로 추가 가능
-            // bindingResult.rejectValue("username", "error.user", e.getMessage());
-            model.addAttribute("errorMessage", e.getMessage()); // 일반 오류 메시지 추가
-            // model.addAttribute("userRegistrationRequest", requestDto); // @ModelAttribute("userRegistrationRequest") 로 자동 추가됨
-            return "users/register"; // 실패 시 다시 회원가입 폼으로 (입력 유지)
+            model.addAttribute("errorMessage", e.getMessage());
+            return "users/register";
         } catch (Exception e) {
-            log.error("Unexpected error during registration for user {}: {}", requestDto.username(), e.getMessage(), e);
-            model.addAttribute("errorMessage", "An unexpected error occurred. Please try again later.");
-            // model.addAttribute("userRegistrationRequest", requestDto); // @ModelAttribute("userRegistrationRequest") 로 자동 추가됨
+            log.error("Unexpected error during registration: {}", e.getMessage(), e);
+            model.addAttribute("errorMessage", "An unexpected error occurred.");
             return "users/register";
         }
     }
@@ -75,5 +62,42 @@ public class UserController {
             model.addAttribute("logoutMessage", "You have been logged out successfully.");
         }
         return "login";
+    }
+
+    @GetMapping("/my-profile")
+    public String showProfilePage(@AuthenticationPrincipal UserDetails userDetails, Model model, RedirectAttributes redirectAttributes) {
+        if (userDetails == null) {
+            return "redirect:/login";
+        }
+        try {
+            String username = userDetails.getUsername();
+            User user = userService.getUserByUsername(username);
+            model.addAttribute("user", user);
+            return "users/profile";
+        } catch (UsernameNotFoundException e) { // Service에서 던진 예외 처리
+            log.warn("Attempted to access profile for non-existent user: {}", userDetails.getUsername());
+            redirectAttributes.addFlashAttribute("errorMessage", "User not found.");
+            return "redirect:/home"; // 또는 다른 적절한 페이지로 리다이렉트
+        }
+    }
+
+    // --- /my-profile/regenerate-key POST 메서드 (UserService 사용 확인) ---
+    @PostMapping("/my-profile/regenerate-key")
+    public String regenerateApiKey(@AuthenticationPrincipal UserDetails userDetails, RedirectAttributes redirectAttributes) {
+        if (userDetails == null) {
+            return "redirect:/login";
+        }
+        try {
+            String username = userDetails.getUsername();
+            userService.regenerateApiKey(username); // Service 메서드 호출
+            redirectAttributes.addFlashAttribute("successMessage", "API Key regenerated successfully.");
+        } catch (UsernameNotFoundException e) { // Service에서 던진 예외 처리
+            log.warn("Attempted to regenerate key for non-existent user: {}", userDetails.getUsername());
+            redirectAttributes.addFlashAttribute("errorMessage", "User not found. Could not regenerate key.");
+        } catch (Exception e) {
+            log.error("Error regenerating API key for user {}: {}", userDetails.getUsername(), e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "Failed to regenerate API key. Please try again.");
+        }
+        return "redirect:/users/my-profile"; // 리다이렉트 경로 수정
     }
 }
