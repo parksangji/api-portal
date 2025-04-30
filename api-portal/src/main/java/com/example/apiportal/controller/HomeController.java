@@ -25,4 +25,11 @@ public class HomeController {
         }
         return "redirect:/home";
     }
+
+    @GetMapping("/api-docs")
+    public String showApiDocsPage(Model model) {
+        model.addAttribute("apiVersion", "v1.0");
+        return "api-docs";
+    }
+
 }

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <title>API Documentation - API Portal</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+  <style>
+    /* API Docs Specific Styles */
+    .content-section {
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #dfe1e5;
+    }
+    .content-section:last-child {
+      border-bottom: none;
+    }
+    h2 {
+      color: #1a73e8; /* Google Link Blue for section titles */
+      border-bottom: 2px solid #e8f0fe;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+    h3 {
+      color: #3c4043;
+      margin-top: 25px;
+      margin-bottom: 15px;
+    }
+    .endpoint {
+      background-color: #e8f0fe; /* Light blue background */
+      border-left: 4px solid #4285F4; /* Google Blue left border */
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 1rem;
+      word-break: break-all;
+    }
+    .endpoint .method {
+      display: inline-block;
+      background-color: #4285F4;
+      color: white;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-weight: bold;
+      margin-right: 10px;
+      font-size: 0.9rem;
+    }
+    pre {
+      background-color: #f1f3f4; /* Light gray for code blocks */
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto; /* Handle long lines */
+      border: 1px solid #dfe1e5;
+    }
+    code {
+      font-family: monospace;
+      background-color: #f1f3f4;
+      padding: 2px 4px;
+      border-radius: 3px;
+      color: #d93025; /* Reddish color for inline code */
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      margin-bottom: 15px;
+    }
+    th, td {
+      border: 1px solid #dfe1e5;
+      padding: 8px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background-color: #f8f9fa;
+      font-weight: 500;
+    }
+    .required {
+      color: #d93025;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h1>API Documentation</h1>
+    <div>
+      <a th:href="@{/home}" style="margin-right: 15px;">Home</a>
+      <a th:href="@{/users/my-profile}">My Profile</a>
+    </div>
+  </div>
+
+
+  <section class="content-section">
+    <h2>Introduction</h2>
+    <p>Welcome to the API documentation for our service. This document provides details on how to authenticate and use the available API endpoints.</p>
+    <p>Base URL: <code>(Your API Base URL will go here, e.g., https://api.yourdomain.com/v1)</code></p>
+  </section>
+
+  <section class="content-section">
+    <h2>Authentication</h2>
+    <p>All API requests must be authenticated using an API key provided in the HTTP request header.</p>
+    <p>You can find your personal API key on your <a th:href="@{/users/my-profile}">profile page</a>.</p>
+    <ul>
+      <li>Header Name: <code>X-API-KEY</code></li>
+      <li>Value: <code>YourUniqueApiKey</code></li>
+    </ul>
+    <h3>Example using cURL:</h3>
+    <pre><code>curl -X GET (Your API Endpoint) \
+ -H "X-API-KEY: YOUR_API_KEY_HERE"</code></pre>
+    <p>Requests without a valid API key or with an incorrect key will receive a <code>401 Unauthorized</code> or <code>403 Forbidden</code> response.</p>
+  </section>
+
+  <section class="content-section">
+    <h2>API Endpoints</h2>
+
+    <article>
+      <h3>Sample: Greet User</h3>
+      <p>A simple endpoint to test authentication and get a greeting message.</p>
+
+      <div class="endpoint">
+        <span class="method">GET</span> /api/sample/greet
+      </div>
+
+      <h4>Description</h4>
+      <p>Returns a personalized greeting message for the authenticated user.</p>
+
+      <h4>Headers</h4>
+      <table>
+        <thead>
+        <tr><th>Header</th><th>Description</th><th>Required</th></tr>
+        </thead>
+        <tbody>
+        <tr><td><code>X-API-KEY</code></td><td>Your unique API key.</td><td><span class="required">Yes</span></td></tr>
+        </tbody>
+      </table>
+
+      <h4>Query Parameters</h4>
+      <p>You can optionally provide a name to include in the greeting.</p>
+      <table>
+        <thead>
+        <tr><th>Parameter</th><th>Type</th><th>Description</th><th>Required</th></tr>
+        </thead>
+        <tbody>
+        <tr><td><code>name</code></td><td>String</td><td>A name to include in the greeting message. If omitted, uses the authenticated username.</td><td>No</td></tr>
+        </tbody>
+      </table>
+
+
+      <h4>Example Request (cURL)</h4>
+      <pre>
+        <code>
+        curl -X GET "YOUR_BASE_URL/api/sample/greet?name=Tester" \
+        -H "X-API-KEY: YOUR_API_KEY_HERE"
+        </code>
+      </pre>
+
+      <h4>Example Success Response (200 OK)</h4>
+      <pre>
+        <code>
+          {
+            "message": "Hello, Tester! Welcome to our API."
+          }
+        </code>
+      </pre>
+      <h4>Example Success Response (No name parameter)</h4>
+      <pre>
+        <code>
+          {
+          "message": "Hello, authenticated_user_name! Welcome to our API."
+          }
+        </code>
+      </pre>
+
+      <h4>Example Error Response (401 Unauthorized)</h4>
+      <pre>
+        <code>
+          {
+            "timestamp": "2025-04-30T12:30:00.123Z",
+            "status": 401,
+            "error": "Unauthorized",
+            "message": "API Key is missing or invalid.",
+            "path": "/api/sample/greet"
+          }
+        </code>
+      </pre>
+    </article>
+  </section>
+</div>
+</body>
+</html>

@@ -24,7 +24,8 @@ public class SecurityConfig {
                 // 요청별 권한 설정
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll() // 정적 리소스 허용
-                        .requestMatchers("/", "/users/register", "/login", "/error").permitAll() // 특정 경로 허용
+                        .requestMatchers("/", "/users/register", "/login", "/error").permitAll()
+                        .requestMatchers("/users/my-profile/**", "/api-docs").authenticated()// 특정 경로 허용
                         .anyRequest().authenticated() // 나머지 요청은 인증 필요
                 )
                 // 폼 기반 로그인 설정
