@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>My Profile - API Portal</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        /* 프로필 페이지 및 API 키 관련 스타일 */
+        .profile-info p { margin-bottom: 10px; }
+        .api-key-container {
+            background-color: #f1f3f4; /* 밝은 회색 배경 */
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            word-break: break-all; /* 긴 키 줄바꿈 처리 */
+        }
+        .api-key {
+            font-family: monospace; /* 고정폭 글꼴 */
+            font-size: 0.95rem;
+            color: #3c4043;
+        }
+        .copy-button, .regenerate-button {
+            background-color: #dadce0; /* 밝은 회색 버튼 */
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-left: 10px;
+            white-space: nowrap; /* 버튼 글자 줄바꿈 방지 */
+        }
+        .regenerate-button {
+            background-color: #fbbc04; /* 노란색/주황색 */
+            color: #3c4043;
+        }
+        .regenerate-form { margin-top: 20px; }
+        hr { margin: 20px 0; border: 0; border-top: 1px solid #dfe1e5; }
+        /* Message 스타일은 style.css에 정의되어 있음 */
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>My Profile</h1>
+
+    <div th:if="${successMessage}" class="message success-message">
+        <p th:text="${successMessage}"></p>
+    </div>
+    <div th:if="${errorMessage}" class="message error-message">
+        <p th:text="${errorMessage}"></p>
+    </div>
+
+    <div class="profile-info">
+        <p><strong>Username:</strong> <span th:text="${user.username}"></span></p>
+        <p><strong>Member Since:</strong>
+            <span th:if="${user.createdAt}" th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
+        </p>
+    </div>
+
+    <hr>
+
+    <h2>Your API Key</h2>
+    <p>API 요청 시 'X-API-KEY' 헤더에 이 키를 사용하세요.</p>
+
+    <div class="api-key-container" th:if="${user.apiKey}">
+        <span class="api-key" id="apiKey" th:text="${user.apiKey}"></span>
+        <button class="copy-button" onclick="copyApiKey()">Copy Key</button>
+    </div>
+    <div th:unless="${user.apiKey}" class="message error-message">
+        API Key has not been generated yet.
+    </div>
+
+    <form class="regenerate-form" th:action="@{/users/my-profile/regenerate-key}" method="post" onsubmit="return confirm('API 키를 재생성하시겠습니까? 기존 키는 즉시 비활성화됩니다.');">
+        <button type="submit" class="regenerate-button">Regenerate API Key</button>
+    </form>
+
+    <div style="margin-top: 30px;">
+        <a th:href="@{/home}">Back to Home</a> |
+        <a th:href="@{/api-docs}">View API Docs</a>
+    </div>
+</div>
+
+<script>
+    function copyApiKey() {
+        const apiKeyElement = document.getElementById('apiKey');
+        if (!apiKeyElement) return;
+
+        const apiKey = apiKeyElement.innerText;
+        navigator.clipboard.writeText(apiKey).then(() => {
+            alert('API Key copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy API key: ', err);
+            prompt('Failed to copy automatically. Please copy manually:', apiKey);
+        });
+    }
+</script>
+</body>
+</html>
