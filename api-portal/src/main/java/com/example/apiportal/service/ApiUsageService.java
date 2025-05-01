@@ -2,10 +2,12 @@ package com.example.apiportal.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
-import java.time.Duration; // 만료 시간 설정을 위함
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -18,45 +20,59 @@ public class ApiUsageService {
     private static final DateTimeFormatter HOURLY_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHH");
     private static final long EXPIRATION_MINUTES = 70;
 
-    /**
-     * 주어진 API 키에 대해 현재 시간 기준 API 사용량을 1 증가시킵니다.
-     * Redis의 INCR 명령어를 사용하며, 해당 시간대의 첫 요청 시 만료 시간을 설정합니다.
-     *
-     * @param apiKey API 요청에 사용된 키
-     * @return 해당 시간대의 현재 누적 사용량 (증가 후 값)
-     */
+    @Value("${api.rate-limit.hourly:100}")
+    private long hourlyLimit;
     public long recordUsage(String apiKey) {
-        // 1. 현재 시간 기준으로 Redis 키 생성
         String hourlyKey = buildHourlyKey(apiKey);
-
-        // 2. Redis의 INCR 명령 실행 (값 1 증가 및 현재 값 반환)
         Long currentCount = redisTemplate.opsForValue().increment(hourlyKey);
-
-        // INCR 결과 null 체크 (일반적으로 발생하지 않음)
         if (currentCount == null) {
-            log.error("Redis INCR returned null for key: {}", hourlyKey);
             throw new RuntimeException("Failed to record API usage in Redis");
         }
-
-        // 3. 만약 이번 증가로 인해 카운트가 1이 되었다면 (해당 시간 첫 요청)
         if (currentCount == 1) {
-            log.debug("Setting expiration ({}) for new hourly usage key: {}", EXPIRATION_MINUTES, hourlyKey);
             redisTemplate.expire(hourlyKey, Duration.ofMinutes(EXPIRATION_MINUTES));
         }
-
         String maskedApiKey = apiKey.length() > 8 ? apiKey.substring(0, 8) + "..." : apiKey;
         log.debug("API usage recorded for key [{}]. Current hourly count: {}. (Redis Key: {})",
                 maskedApiKey, currentCount, hourlyKey);
-
         return currentCount;
     }
 
-    /**
-     * API 키와 현재 시간을 조합하여 시간별 Redis 키를 생성합니다.
-     * 형식: "api_usage:{apiKey}:{yyyyMMddHH}"
-     */
     private String buildHourlyKey(String apiKey) {
         String currentHour = LocalDateTime.now().format(HOURLY_FORMATTER);
         return String.format("api_usage:%s:%s", apiKey, currentHour);
+    }
+
+    /**
+     * 주어진 API 키의 현재 시간당 사용량이 설정된 한도를 초과했는지 확인합니다.
+     * 주의: 이 메서드는 사용량을 증가시키지 않고 확인만 합니다.
+     *
+     * @param apiKey 확인할 API 키
+     * @return 한도를 초과했으면 true, 아니면 false
+     */
+    public boolean isLimitExceeded(String apiKey) {
+        String hourlyKey = buildHourlyKey(apiKey);
+
+        String currentCountStr = redisTemplate.opsForValue().get(hourlyKey);
+
+        long currentCount = 0;
+        if (StringUtils.hasText(currentCountStr)) {
+            try {
+                currentCount = Long.parseLong(currentCountStr);
+            } catch (NumberFormatException e) {
+                log.warn("Could not parse Redis count '{}' for key '{}'. Assuming count is 0.", currentCountStr, hourlyKey);
+            }
+        }
+
+        boolean exceeded = currentCount >= hourlyLimit;
+
+        if (exceeded) {
+            String maskedApiKey = apiKey.length() > 8 ? apiKey.substring(0, 8) + "..." : apiKey;
+            log.warn("Rate limit check: Limit EXCEEDED for key [{}]. Current count: {}, Limit: {}",
+                    maskedApiKey, currentCount, hourlyLimit);
+        } else {
+             log.debug("Rate limit check: OK for key [{}]. Current count: {}, Limit: {}", apiKey, currentCount, hourlyLimit);
+        }
+
+        return exceeded;
     }
 }

@@ -46,7 +46,9 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        log.debug("Attempting authentication with API Key: {}", apiKey);
+        String maskedApiKey = apiKey.length() > 8 ? apiKey.substring(0, 8) + "..." : apiKey;
+        log.debug("Attempting authentication with API Key: [{}]", maskedApiKey);
+
         Optional<User> userOptional = userRepository.findByApiKey(apiKey);
 
         if (userOptional.isPresent()) {
@@ -54,14 +56,19 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             String username = user.getUsername();
             log.info("API Key validated successfully for user: {}", user.getUsername());
 
+            if (apiUsageService.isLimitExceeded(apiKey)) {
+                log.warn("API Request REJECTED due to rate limit exceeded for user: {}, key: [{}]", username, maskedApiKey);
+                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+                response.getWriter().write("Rate limit exceeded. Please try again later.");
+                 response.addHeader("Retry-After", "60");
+                return; // 필터 체인 중단
+            }
+
             try {
-                long usageCount = apiUsageService.recordUsage(apiKey);
-                log.debug("Usage recorded for user: {}, key: [{}]. Hourly count: {}",
-                        username, (apiKey.length() > 8 ? apiKey.substring(0, 8) + "..." : apiKey), usageCount);
+                long usageCount = apiUsageService.recordUsage(apiKey); // 한도 체크 통과 후 기록
+                log.debug("Usage recorded for user: {}, key: [{}]. Hourly count: {}", username, maskedApiKey, usageCount);
             } catch (Exception e) {
-                // Redis 오류 등으로 사용량 기록 실패 시 에러 로깅 (요청 자체는 허용할 수도 있음)
-                log.error("Failed to record API usage for user: {}, key: [{}]",
-                        username, (apiKey.length() > 8 ? apiKey.substring(0, 8) + "..." : apiKey), e);
+                log.error("Failed to record API usage for user: {}, key: [{}]", username, maskedApiKey, e);
             }
 
             try {
@@ -83,11 +90,10 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
                 SecurityContextHolder.clearContext();
                 response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
                 response.getWriter().write("User authentication context setup error");
-                return;
             }
 
         } else {
-            log.warn("Invalid API Key received: {}", apiKey);
+            log.warn("Invalid API Key received: [{}]", maskedApiKey);
             SecurityContextHolder.clearContext();
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
             response.getWriter().write("Invalid API Key");
