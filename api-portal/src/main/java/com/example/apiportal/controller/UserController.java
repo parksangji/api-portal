@@ -74,14 +74,13 @@ public class UserController {
             User user = userService.getUserByUsername(username);
             model.addAttribute("user", user);
             return "users/profile";
-        } catch (UsernameNotFoundException e) { // Service에서 던진 예외 처리
+        } catch (UsernameNotFoundException e) {
             log.warn("Attempted to access profile for non-existent user: {}", userDetails.getUsername());
             redirectAttributes.addFlashAttribute("errorMessage", "User not found.");
-            return "redirect:/home"; // 또는 다른 적절한 페이지로 리다이렉트
+            return "redirect:/home";
         }
     }
 
-    // --- /my-profile/regenerate-key POST 메서드 (UserService 사용 확인) ---
     @PostMapping("/my-profile/regenerate-key")
     public String regenerateApiKey(@AuthenticationPrincipal UserDetails userDetails, RedirectAttributes redirectAttributes) {
         if (userDetails == null) {

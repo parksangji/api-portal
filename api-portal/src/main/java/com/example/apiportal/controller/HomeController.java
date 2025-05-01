@@ -31,5 +31,4 @@ public class HomeController {
         model.addAttribute("apiVersion", "v1.0");
         return "api-docs";
     }
-
 }

@@ -79,6 +79,28 @@
       color: #d93025;
       font-weight: bold;
     }
+    .try-button {
+      background-color: #34a853; /* Google Green */
+      color: white;
+      padding: 8px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-top: 10px;
+      transition: background-color 0.2s ease-in-out;
+    }
+    .try-button:hover {
+      background-color: #1e8e3e; /* Darker Green */
+    }
+    #greetResponseOutput code { /* 응답 영역 스타일 약간 수정 */
+      display: block; /* 줄바꿈 등 형식 유지 위해 */
+      white-space: pre-wrap; /* 자동 줄바꿈 */
+      word-break: break-all;
+      color: #333;
+      background-color: transparent; /* code 기본 배경 제거 */
+      padding: 0;
+    }
   </style>
 </head>
 <body>
@@ -186,7 +208,134 @@
         </code>
       </pre>
     </article>
+    <article>
+      <h3>Sample: Greet User</h3>
+      <p>A simple endpoint to test authentication and get a greeting message.</p>
+
+      <div class="endpoint">
+        <span class="method">GET</span> /api/sample/greet
+      </div>
+
+      <h4>Description</h4>
+      <p>Returns a personalized greeting message for the authenticated user.</p>
+
+      <h4>Headers</h4>
+      <h4>Query Parameters</h4>
+      <div class="interactive-test" style="border: 1px solid #dfe1e5; padding: 20px; margin-top: 25px; border-radius: 4px;">
+        <h4>Try it out!</h4>
+
+        <div class="form-group">
+          <label for="apiKeyInput_greet">Your API Key:</label>
+          <input type="text" id="apiKeyInput_greet" placeholder="Paste your API key here" style="width: calc(100% - 22px);">
+          <small>You can find your key on your <a th:href="@{/users/my-profile}">profile page</a>.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="greetNameParam">Optional 'name' Parameter:</label>
+          <input type="text" id="greetNameParam" placeholder="Enter a name (optional)" style="width: calc(100% - 22px);">
+        </div>
+
+        <button type="button" class="try-button" onclick="sendGreetRequest()">Send Request</button>
+
+        <div style="margin-top: 15px;">
+          <strong>Response:</strong>
+          <pre id="greetResponseOutput" style="min-height: 60px; background-color: #f8f9fa;"><code>Click 'Send Request' to see the response.</code></pre>
+        </div>
+      </div>
+      <h4>Example Request (cURL)</h4>
+      <h4>Example Success Response (200 OK)</h4>
+      <h4>Example Success Response (No name parameter)</h4>
+      <h4>Example Error Response (401 Unauthorized)</h4>
+    </article>
   </section>
 </div>
 </body>
+<script>
+  async function sendGreetRequest() {
+    // 입력 요소 및 출력 요소 가져오기 (이전과 동일)
+    const apiKeyInput = document.getElementById('apiKeyInput_greet');
+    const nameParamInput = document.getElementById('greetNameParam');
+    const responseOutputCode = document.getElementById('greetResponseOutput').querySelector('code');
+
+    // 입력 값 가져오기 (이전과 동일)
+    const apiKey = apiKeyInput.value.trim();
+    const nameParam = nameParamInput.value.trim();
+
+    // API 키 입력 확인 (이전과 동일)
+    if (!apiKey) {
+      responseOutputCode.textContent = 'Error: Please enter your API Key.';
+      responseOutputCode.style.color = '#d93025';
+      return;
+    }
+
+    // 요청 URL 생성 (이전과 동일)
+    const baseUrl = '/api/sample/greet';
+    const url = new URL(baseUrl, window.location.origin);
+    if (nameParam) {
+      url.searchParams.append('name', nameParam);
+    }
+
+    // 응답 영역 초기화 (이전과 동일)
+    responseOutputCode.textContent = 'Sending request...';
+    responseOutputCode.style.color = '#333';
+
+    try {
+      // fetch API로 GET 요청 보내기 (이전과 동일)
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'X-API-KEY': apiKey,
+          'Accept': 'application/json'
+        }
+      });
+
+      // === 응답 처리 로직 수정 ===
+      let responseData;
+      const contentType = response.headers.get("content-type");
+      // 에러 처리를 위해 먼저 텍스트로 읽기 시도
+      const responseText = await response.text();
+
+      if (!response.ok) { // HTTP 상태 코드가 2xx가 아닌 경우 (에러)
+        let displayError = `Error ${response.status}: ${response.statusText || 'Unknown Error'}\n\n`;
+        // 응답 본문이 JSON 형태일 수 있으므로 파싱 시도
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            responseData = JSON.parse(responseText); // 텍스트를 JSON으로 파싱
+            displayError += JSON.stringify(responseData, null, 2); // 파싱 성공 시 JSON 문자열 추가
+          } catch (jsonError) {
+            displayError += responseText; // JSON 파싱 실패 시 원본 텍스트 추가
+          }
+        } else {
+          displayError += responseText; // JSON이 아니면 원본 텍스트 추가
+        }
+        responseOutputCode.textContent = displayError;
+        responseOutputCode.style.color = '#d93025';
+      } else { // HTTP 상태 코드가 2xx인 경우 (성공)
+        // 성공 응답이 JSON 형태일 것으로 기대
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            responseData = JSON.parse(responseText); // 텍스트를 JSON으로 파싱
+            responseOutputCode.textContent = JSON.stringify(responseData, null, 2); // 성공 JSON 표시
+            responseOutputCode.style.color = '#333'; // 기본 색상
+          } catch (jsonError) {
+            // 성공(2xx)했지만 JSON 파싱 실패한 경우
+            responseOutputCode.textContent = "Received OK status, but failed to parse JSON response:\n\n" + responseText;
+            responseOutputCode.style.color = '#d93025'; // 에러로 간주
+          }
+        } else {
+          // JSON이 아닌 성공 응답 처리 (필요시)
+          responseOutputCode.textContent = responseText;
+          responseOutputCode.style.color = '#333';
+        }
+      }
+      // === 응답 처리 로직 수정 끝 ===
+
+    } catch (error) {
+      // 네트워크 오류 등 fetch 자체 에러 처리 (이전과 동일)
+      console.error('Fetch API Error:', error);
+      responseOutputCode.textContent = `Network Error: ${error.message}. Check the browser console for more details.`;
+      responseOutputCode.style.color = '#d93025';
+    }
+  }
+</script>
 </html>
