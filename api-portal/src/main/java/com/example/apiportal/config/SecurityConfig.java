@@ -2,6 +2,7 @@ package com.example.apiportal.config;
 
 import com.example.apiportal.repository.UserRepository;
 import com.example.apiportal.security.ApiKeyAuthFilter;
+import com.example.apiportal.service.ApiUsageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +25,7 @@ public class SecurityConfig {
 
     private final UserRepository userRepository;
     private final UserDetailsService userDetailsService;
+    private final ApiUsageService apiUsageService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -40,7 +42,7 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
-                .addFilterBefore(new ApiKeyAuthFilter(userRepository, userDetailsService), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new ApiKeyAuthFilter(userRepository, userDetailsService, apiUsageService), UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authz -> authz
                         .anyRequest().authenticated()
                 );

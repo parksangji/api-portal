@@ -2,6 +2,7 @@ package com.example.apiportal.security;
 
 import com.example.apiportal.domain.User;
 import com.example.apiportal.repository.UserRepository;
+import com.example.apiportal.service.ApiUsageService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,6 +30,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
     private final UserRepository userRepository;
     private final UserDetailsService userDetailsService;
+    private final ApiUsageService apiUsageService;
     private static final String API_KEY_HEADER = "X-API-KEY";
 
     @Override
@@ -49,7 +51,18 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
         if (userOptional.isPresent()) {
             User user = userOptional.get();
+            String username = user.getUsername();
             log.info("API Key validated successfully for user: {}", user.getUsername());
+
+            try {
+                long usageCount = apiUsageService.recordUsage(apiKey);
+                log.debug("Usage recorded for user: {}, key: [{}]. Hourly count: {}",
+                        username, (apiKey.length() > 8 ? apiKey.substring(0, 8) + "..." : apiKey), usageCount);
+            } catch (Exception e) {
+                // Redis 오류 등으로 사용량 기록 실패 시 에러 로깅 (요청 자체는 허용할 수도 있음)
+                log.error("Failed to record API usage for user: {}, key: [{}]",
+                        username, (apiKey.length() > 8 ? apiKey.substring(0, 8) + "..." : apiKey), e);
+            }
 
             try {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
