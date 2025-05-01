@@ -247,6 +247,88 @@
       <h4>Example Success Response (No name parameter)</h4>
       <h4>Example Error Response (401 Unauthorized)</h4>
     </article>
+
+    <article>
+      <hr style="margin-top: 40px; margin-bottom: 40px;"> <h3>Sample: Echo Content</h3>
+      <p>An endpoint that receives JSON content in the request body and echoes it back.</p>
+
+      <div class="endpoint">
+        <span class="method" style="background-color: #34a853;">POST</span> /api/sample/echo </div>
+
+      <h4>Description</h4>
+      <p>Accepts a JSON object with a <code>content</code> field in the request body and returns a JSON object containing the received content and a timestamp.</p>
+
+      <h4>Headers</h4>
+      <table>
+        <thead>
+        <tr><th>Header</th><th>Description</th><th>Required</th></tr>
+        </thead>
+        <tbody>
+        <tr><td><code>X-API-KEY</code></td><td>Your unique API key.</td><td><span class="required">Yes</span></td></tr>
+        <tr><td><code>Content-Type</code></td><td>Must be <code>application/json</code>.</td><td><span class="required">Yes</span></td></tr>
+        </tbody>
+      </table>
+
+      <h4>Request Body</h4>
+      <p>A JSON object with the following structure:</p>
+      <pre>
+        <code>
+          {
+          "content": "string (required)"
+          }
+        </code>
+      </pre>
+      <h5>Example Request Body:</h5>
+      <pre>
+        <code>
+          {
+            "content": "This is a test message!"
+          }
+        </code>
+      </pre>
+
+      <div class="interactive-test" style="border: 1px solid #dfe1e5; padding: 20px; margin-top: 25px; border-radius: 4px;">
+        <h4>Try it out!</h4>
+
+        <div class="form-group">
+          <label for="apiKeyInput_echo">Your API Key:</label>
+          <input type="text" id="apiKeyInput_echo" placeholder="Paste your API key here" style="width: calc(100% - 22px);">
+        </div>
+
+        <div class="form-group">
+          <label for="echoRequestBody">Request Body (JSON):</label>
+          <textarea id="echoRequestBody" rows="4" placeholder='{ "content": "Enter your message here" }' style="width: calc(100% - 22px); font-family: monospace;"></textarea>
+        </div>
+
+        <button type="button" class="try-button" onclick="sendEchoRequest()">Send Request</button>
+
+        <div style="margin-top: 15px;">
+          <strong>Response:</strong>
+          <pre id="echoResponseOutput" style="min-height: 60px; background-color: #f8f9fa;"><code>Click 'Send Request' to see the response.</code></pre>
+        </div>
+      </div>
+      <h4>Example Success Response (200 OK)</h4>
+      <pre>
+        <code>
+          {
+          "received": "This is a test message!",
+          "timestamp": "2025-05-01T09:15:30.123456Z"
+          }
+        </code>
+      </pre>
+
+      <h4>Example Error Response (400 Bad Request - Validation Error)</h4>
+      <pre>
+        <code>
+          {
+          "content": "Content cannot be blank"
+          }
+        </code>
+      </pre>
+      <h4>Example Error Response (401 Unauthorized)</h4>
+      <pre><code>Invalid API Key</code></pre>
+
+    </article>
   </section>
 </div>
 </body>
@@ -332,6 +414,96 @@
 
     } catch (error) {
       // 네트워크 오류 등 fetch 자체 에러 처리 (이전과 동일)
+      console.error('Fetch API Error:', error);
+      responseOutputCode.textContent = `Network Error: ${error.message}. Check the browser console for more details.`;
+      responseOutputCode.style.color = '#d93025';
+    }
+  }
+  async function sendEchoRequest() {
+    // 입력 요소 및 출력 요소 가져오기
+    const apiKeyInput = document.getElementById('apiKeyInput_echo');
+    const requestBodyInput = document.getElementById('echoRequestBody');
+    const responseOutputCode = document.getElementById('echoResponseOutput').querySelector('code');
+
+    // 입력 값 가져오기
+    const apiKey = apiKeyInput.value.trim();
+    const requestBody = requestBodyInput.value.trim(); // JSON 문자열
+
+    // API 키 입력 확인
+    if (!apiKey) {
+      responseOutputCode.textContent = 'Error: Please enter your API Key.';
+      responseOutputCode.style.color = '#d93025';
+      return;
+    }
+
+    // 요청 본문 JSON 형식 검증 (간단하게)
+    let parsedRequestBody;
+    if (!requestBody) {
+      responseOutputCode.textContent = 'Error: Request body cannot be empty.';
+      responseOutputCode.style.color = '#d93025';
+      return;
+    }
+    try {
+      parsedRequestBody = JSON.parse(requestBody); // 입력된 문자열이 유효한 JSON인지 파싱 시도
+    } catch (e) {
+      responseOutputCode.textContent = 'Error: Invalid JSON format in Request Body.\n' + e.message;
+      responseOutputCode.style.color = '#d93025';
+      return;
+    }
+
+    // 요청 URL
+    const url = '/api/sample/echo'; // 상대 경로
+
+    // 응답 영역 초기화
+    responseOutputCode.textContent = 'Sending request...';
+    responseOutputCode.style.color = '#333';
+
+    try {
+      // fetch API로 POST 요청 보내기
+      const response = await fetch(url, {
+        method: 'POST', // 메서드: POST
+        headers: {
+          'X-API-KEY': apiKey,
+          'Content-Type': 'application/json', // Content-Type 헤더 필수
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(parsedRequestBody) // JavaScript 객체를 JSON 문자열로 변환하여 body에 넣음
+      });
+
+      // === 응답 처리 (이전 sendGreetRequest와 유사) ===
+      let responseData;
+      const contentType = response.headers.get("content-type");
+      const responseText = await response.text(); // 일단 텍스트로 읽기
+
+      if (!response.ok) { // 에러 처리
+        let displayError = `Error ${response.status}: ${response.statusText || 'Unknown Error'}\n\n`;
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            responseData = JSON.parse(responseText);
+            displayError += JSON.stringify(responseData, null, 2);
+          } catch (jsonError) { displayError += responseText; }
+        } else { displayError += responseText; }
+        responseOutputCode.textContent = displayError;
+        responseOutputCode.style.color = '#d93025';
+      } else { // 성공 처리
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            responseData = JSON.parse(responseText);
+            responseOutputCode.textContent = JSON.stringify(responseData, null, 2);
+            responseOutputCode.style.color = '#333';
+          } catch(jsonError) {
+            responseOutputCode.textContent = "Received OK status, but failed to parse JSON response:\n\n" + responseText;
+            responseOutputCode.style.color = '#d93025';
+          }
+        } else {
+          responseOutputCode.textContent = responseText;
+          responseOutputCode.style.color = '#333';
+        }
+      }
+      // === 응답 처리 끝 ===
+
+    } catch (error) {
+      // 네트워크 오류 등 처리 (이전과 동일)
       console.error('Fetch API Error:', error);
       responseOutputCode.textContent = `Network Error: ${error.message}. Check the browser console for more details.`;
       responseOutputCode.style.color = '#d93025';

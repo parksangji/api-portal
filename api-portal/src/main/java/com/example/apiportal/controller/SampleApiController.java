@@ -1,16 +1,19 @@
 package com.example.apiportal.controller;
 
+import com.example.apiportal.dto.sample.SampleEchoRequest;
+import com.example.apiportal.dto.sample.SampleEchoResponse;
 import com.example.apiportal.dto.sample.SampleGreetResponse;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.Instant;
 
 @RestController
 @RequestMapping("/api/sample")
@@ -41,6 +44,24 @@ public class SampleApiController {
         String message = String.format("Hello, %s! Welcome to our API.", nameToGreet);
 
         SampleGreetResponse response = new SampleGreetResponse(message);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/echo")
+    public ResponseEntity<?> echoContent(
+            @Valid @RequestBody SampleEchoRequest requestDto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        if (userDetails == null) {
+            log.warn("Access attempt to /api/sample/echo without authentication principal.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required.");
+        }
+
+        log.info("API request to /echo received from user: {} with content: '{}'",
+                userDetails.getUsername(), requestDto.getContent());
+
+        SampleEchoResponse response = new SampleEchoResponse(requestDto.getContent(), Instant.now());
 
         return ResponseEntity.ok(response);
     }
