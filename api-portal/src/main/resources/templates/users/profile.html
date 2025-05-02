@@ -39,12 +39,33 @@
         .regenerate-form { margin-top: 20px; }
         hr { margin: 20px 0; border: 0; border-top: 1px solid #dfe1e5; }
         /* Message 스타일은 style.css에 정의되어 있음 */
+
+        .api-usage-info p { margin-bottom: 5px; } /* Style for usage text */
+        .progress-bar-container { /* Style for progress bar background */
+            background-color: #e9ecef;
+            border-radius: .25rem;
+            overflow: hidden;
+            height: 20px;
+            margin-top: 5px;
+        }
+        .progress-bar-fill { /* Style for the filling part */
+            height: 100%;
+            text-align: center;
+            color: white;
+            font-size: 0.8rem;
+            line-height: 20px;
+            transition: width 0.6s ease; /* Smooth transition */
+        }
+        .progress-bar-fill.low { background-color: #0d6efd; } /* Blue */
+        .progress-bar-fill.medium { background-color: #ffc107; } /* Yellow */
+        .progress-bar-fill.high { background-color: #dc3545; } /* Red */
     </style>
 </head>
 <body>
 <div class="container">
     <h1>My Profile</h1>
 
+    <!-- Flash Messages -->
     <div th:if="${successMessage}" class="message success-message">
         <p th:text="${successMessage}"></p>
     </div>
@@ -52,6 +73,7 @@
         <p th:text="${errorMessage}"></p>
     </div>
 
+    <!-- Profile Info -->
     <div class="profile-info">
         <p><strong>Username:</strong> <span th:text="${user.username}"></span></p>
         <p><strong>Member Since:</strong>
@@ -61,6 +83,7 @@
 
     <hr>
 
+    <!-- API Key Info -->
     <h2>Your API Key</h2>
     <p>API 요청 시 'X-API-KEY' 헤더에 이 키를 사용하세요.</p>
 
@@ -72,6 +95,37 @@
         API Key has not been generated yet.
     </div>
 
+    <hr>
+    <h2>API Usage (Current Hour)</h2>
+    <div class="api-usage-info">
+        <div th:if="${apiUsageError}" class="message error-message">
+            <p th:text="${apiUsageError}"></p>
+        </div>
+
+        <div th:if="${apiUsageAvailable}">
+            <p>
+                Requests made this hour:
+                <strong th:text="${apiUsageCurrent}">0</strong> / <span th:text="${apiUsageLimit}">100</span>
+            </p>
+
+            <div th:if="${apiUsageLimit != 'N/A' and apiUsageLimit != '0'}"
+                 class="progress-bar-container">
+                <div th:with="barColorClass = (${apiUsagePercent >= 90} ? 'high' : (${apiUsagePercent >= 75} ? 'medium' : 'low'))"
+                     th:classappend="${' ' + barColorClass}"
+                     th:styleappend="'width:' + ${#numbers.formatDecimal(apiUsagePercent, 1, 1)} + '%;'"
+                     class="progress-bar-fill">
+                    <span th:if="${apiUsagePercent > 10}" th:text="${#numbers.formatDecimal(apiUsagePercent, 1, 0)} + '%'"></span>
+                </div>
+            </div>
+
+            <small th:text="'Hourly limit resets approximately on the hour. Current time: ' + ${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd HH:mm:ss z')}"></small>
+        </div>
+
+        <div th:unless="${apiUsageAvailable or apiUsageError}">
+            <p>API usage information is currently unavailable.</p>
+        </div>
+    </div>
+    <!-- API Key Regenerate Form -->
     <form class="regenerate-form" th:action="@{/users/my-profile/regenerate-key}" method="post" onsubmit="return confirm('API 키를 재생성하시겠습니까? 기존 키는 즉시 비활성화됩니다.');">
         <button type="submit" class="regenerate-button">Regenerate API Key</button>
     </form>

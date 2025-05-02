@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -74,5 +75,32 @@ public class ApiUsageService {
         }
 
         return exceeded;
+    }
+
+    /**
+     * 주어진 API 키에 대한 현재 시간 기준 사용량과 시간당 한도를 조회합니다.
+     *
+     * @param apiKey 조회할 API 키
+     * @return "current" 키에는 현재 사용량, "limit" 키에는 시간당 한도를 담은 Map 객체.
+     * 키가 없거나 파싱 실패 시 현재 사용량은 0으로 간주됩니다.
+     */
+    public Map<String, Long> getCurrentHourlyUsage(String apiKey) {
+        String hourlyKey = buildHourlyKey(apiKey);
+
+        String currentCountStr = redisTemplate.opsForValue().get(hourlyKey);
+
+        long currentCount = 0;
+        if (StringUtils.hasText(currentCountStr)) {
+            try {
+                currentCount = Long.parseLong(currentCountStr);
+            } catch (NumberFormatException e) {
+                log.warn("Could not parse Redis count '{}' for key '{}' while getting usage. Assuming 0.", currentCountStr, hourlyKey);
+            }
+        }
+
+        return Map.of(
+                "current", currentCount,
+                "limit", this.hourlyLimit
+        );
     }
 }
